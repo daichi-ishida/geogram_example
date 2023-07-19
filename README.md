@@ -90,7 +90,8 @@ cmake --preset gcc-linux-release
 cd build/gcc-linux-release
 cmake --build .
 
-./bin/release/point_check
+cd ../../bin/release
+./point_check
 ```
 
 #### **clang++**
@@ -103,5 +104,5 @@ cd geogram_example
 cmake --preset clang-linux
 cmake --build --preset release
 
-./build/clang-linux/bin/release/point_check
+./bin/release/point_check
 ```
