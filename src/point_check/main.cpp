@@ -172,7 +172,7 @@ int main(int argc, char **argv)
     GEO::vec3 domain_max(15,  4, 8);
 
     GEO::vector<double> points;
-    std::string input_filepath = std::string(DATA_PATH) + "/failed_case.pts";
+    std::string input_filepath = std::string(DATA_PATH) + "/failure_case.pts";
     // std::string input_filepath = std::string(DATA_PATH) + "/success_case.pts";
     std::ifstream inputFile(input_filepath);
     if (inputFile.is_open())
