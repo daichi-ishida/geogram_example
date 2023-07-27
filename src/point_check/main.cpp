@@ -167,6 +167,20 @@ int main(int argc, char **argv)
     GEO::CmdLine::set_arg("pre:epsilon", 1e-3);
     GEO::CmdLine::import_arg_group("remesh");
 
+    // Use Parallel Delaunay (instead of Kd-tree) for RVD computation
+    // This was where the first problem came from (pointset has high
+    // variations of density, causing Kd-tree to search for a huge
+    // number of neighbors that did not fit on the stack).
+    GEO::CmdLine::set_arg("algo:delaunay","PDEL");
+   
+    // Parse the command line, and get optional input file name from
+    // command line.
+    std::vector<std::string> filenames;
+    if(!GEO::CmdLine::parse(argc, argv, filenames, "<inputfile>")) {
+        GEO::Logger::err("point_example") << "exiting" << std::endl;
+        return 1;
+    }
+    
     GEO::Mesh M_domain, M_result;
     GEO::vec3 domain_min(-5, -4, 0);
     GEO::vec3 domain_max(15,  4, 8);
@@ -174,6 +188,12 @@ int main(int argc, char **argv)
     GEO::vector<double> points;
     std::string input_filepath = std::string(DATA_PATH) + "/failure_case.pts";
     // std::string input_filepath = std::string(DATA_PATH) + "/success_case.pts";
+
+    // If input file name was specified in command line, use it
+    if(filenames.size() == 1) {
+        input_filepath = filenames[0];
+    }
+    
     std::ifstream inputFile(input_filepath);
     if (inputFile.is_open())
     {
@@ -198,12 +218,17 @@ int main(int argc, char **argv)
 
     initialize_domain_mesh(domain_min, domain_max, M_domain);
 
+    M_domain.facets.triangulate();
+    
+    /*
+    // commented-out for now (wrecks the mesh, to be investigated)
     if (!preprocess(M_domain))
     {
         GEO::Logger::err("Failed while preprocess");
         exit(1);
     }
-
+    */
+    
     if (!GEO::mesh_tetrahedralize(M_domain))
     {
         GEO::Logger::err("Failed to tetrahedralize");
@@ -211,12 +236,16 @@ int main(int argc, char **argv)
     }
     M_domain.cells.compute_borders();
 
+    // Useful To take a look at what the domain looks like
+    GEO::mesh_save(M_domain,std::string(RESULT_PATH) + "/domain.geogram");
+    
     GEO::Logger::div("CVT");
     GEO::CentroidalVoronoiTesselation CVT(&M_domain, GEO::coord_index_t(3));
     CVT.set_volumetric(true);
+    GEO::Logger::out("CVT") << "Set vertices" << std::endl;
     CVT.delaunay()->set_vertices(points.size()/3, points.data());
     CVT.RVD()->set_exact_predicates(true);
-
+    GEO::Logger::out("CVT") << "Compute RVD" << std::endl;
     {
         GEO::BuildRVDMesh callback(M_result);
         callback.set_simplify_voronoi_facets(true);
